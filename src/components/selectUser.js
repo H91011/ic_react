@@ -1,6 +1,6 @@
 import {Component} from "react";
 import {Card, Row, Col} from "react-bootstrap";
-import Customer from "./customer.js";
+import TicketForm from "./ticketForm.js";
 
 const accountType = {
   employee: 1,
@@ -48,10 +48,8 @@ class SelectUser extends Component {
               </Card>
             </Col>
           </Row>
-        ) : user === accountType.employee ? (
-          <p> Employee</p>
         ) : (
-          <Customer />
+          <TicketForm user={{type: this.state.user}} />
         )}
       </div>
     );

@@ -7,13 +7,16 @@ import {
   ListGroup,
   InputGroup,
   FormControl,
-  Button
+  Button,
+  Form
 } from "react-bootstrap";
 import {MdWarning, MdDone} from "react-icons/md";
+import {nanoid} from "nanoid";
 
-class Customer extends Component {
+class TicketForm extends Component {
   constructor(props) {
     super(props);
+    console.log(this);
     this.state = {
       user: 0,
       selectedTab: "tickets",
@@ -35,13 +38,14 @@ class Customer extends Component {
       ],
 
       currentTicket: null,
-      ticketText: null
+      ticketText: undefined
     };
   }
 
   createTicketMsg = msg => {
     return {user: "customer", msg};
   };
+
   createTicket = (subject, msg) => {
     return {
       subject,
@@ -86,8 +90,22 @@ class Customer extends Component {
     }
   };
 
+  tabSelect = k => {
+    const state = {
+      selectedTab: k,
+      currentTicket: null
+    };
+    if (k === "createTicket") {
+      state.ticketText = undefined;
+      document.getElementById("ticketSubject").value = null;
+      document.getElementById("bodyMsg").value = null;
+    }
+    this.setState(state);
+  };
+
   render() {
     const {selectedTab, tickets, currentTicket, ticketText} = this.state;
+    const {type} = this.props.user;
     return (
       <div>
         <Row>
@@ -101,23 +119,63 @@ class Customer extends Component {
               id="customerTab"
               activeKey={selectedTab}
               onSelect={k => {
-                const state = {
-                  selectedTab: k,
-                  currentTicket: null
-                };
-                if (k === "createTicket") {
-                  state.ticketText = null;
-                  document.getElementById("ticketSubject").value = null;
-                  document.getElementById("bodyMsg").value = null;
-                }
-                this.setState(state);
+                this.tabSelect(k);
               }}
             >
               <Tab eventKey="tickets" title="My Tickets">
-                <ListGroup>
+                {type === 1 ? (
+                  <div>
+                    <Form style={{display: "inline-flex", marginTop: "10px"}}>
+                      <Form.Check
+                        className="searchRadio"
+                        type="radio"
+                        id="allRadio"
+                        label="all"
+                        name="showRadios"
+                      />
+                      <Form.Check
+                        className="searchRadio"
+                        type="radio"
+                        id="openRadio"
+                        label="opened"
+                        name="showRadios"
+                      />
+                      <Form.Check
+                        className="searchRadio"
+                        type="radio"
+                        id="closeRadio"
+                        label="closed"
+                        name="showRadios"
+                      />
+                    </Form>
+                    <Form style={{display: "flex", marginTop: "10px"}}>
+                      <InputGroup size="sm" className="mb-6">
+                        <InputGroup.Prepend></InputGroup.Prepend>
+                        <FormControl
+                          id="searchBar"
+                          disabled={false}
+                          aria-describedby="basic-addon1"
+                          placeholder="search ticket"
+                        />
+                      </InputGroup>
+                      <Form.Check
+                        style={{
+                          fontSize: "10px",
+                          marginTop: "5px",
+                          marginLeft: "5px"
+                        }}
+                        type="switch"
+                        id="searchswitch"
+                        label="byName"
+                      />
+                    </Form>
+                  </div>
+                ) : null}
+                <ListGroup style={{marginTop: "15px"}}>
                   {tickets.map((elem, index) => {
                     return (
                       <ListGroup.Item
+                        key={nanoid()}
                         index={index}
                         onClick={item => {
                           const {nodeValue} = item.target.attributes.index;
@@ -135,7 +193,11 @@ class Customer extends Component {
                 </ListGroup>
               </Tab>
               <Tab eventKey="createTicket" title="Send Ticket">
-                <InputGroup size="sm" className="mb-3">
+                <InputGroup
+                  size="sm"
+                  className="mb-3"
+                  style={{marginTop: "15px"}}
+                >
                   <InputGroup.Prepend></InputGroup.Prepend>
                   <FormControl
                     id="ticketSubject"
@@ -161,6 +223,11 @@ class Customer extends Component {
                     aria-label="With textarea"
                   />
                 </InputGroup>
+                <Form style={{marginTop: "10px"}}>
+                  <Form.Group>
+                    <Form.File id="fileInput" />
+                  </Form.Group>
+                </Form>
                 <Button
                   id="sendTicket"
                   className="ticketBtn"
@@ -181,4 +248,4 @@ class Customer extends Component {
   }
 }
 
-export default Customer;
+export default TicketForm;
