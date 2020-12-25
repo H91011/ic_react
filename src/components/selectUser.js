@@ -1,28 +1,61 @@
-import { Component } from 'react'
-import { Button } from 'react-bootstrap'
+import {Component} from "react";
+import {Card, Row, Col} from "react-bootstrap";
+import Customer from "./customer.js";
 
+const accountType = {
+  employee: 1,
+  customer: 2
+};
 
-class SelectUser extends Component{
+class SelectUser extends Component {
   constructor(props) {
-    super(props)
+    super(props);
 
-    this.state= {}
-
+    this.state = {
+      user: 0
+    };
   }
 
-
   render() {
-    return(
+    const {user} = this.state;
+    return (
       <div>
-        <p> Please Select a User </p>
-        <Button variant="primary">Primary</Button>
+        {user === 0 ? (
+          <Row>
+            <Col className="mx-auto" xs={6}>
+              <br />
+              <br />
+              <br />
+              <p> Please Select a Account</p>
+              <Card
+                onClick={() => {
+                  this.setState({user: 2});
+                }}
+              >
+                <Card.Body>
+                  <Card.Title>Customer</Card.Title>
+                </Card.Body>
+              </Card>
+
+              <Card
+                onClick={() => {
+                  this.setState({user: 1});
+                }}
+              >
+                <Card.Body>
+                  <Card.Title>Employee</Card.Title>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+        ) : user === accountType.employee ? (
+          <p> Employee</p>
+        ) : (
+          <Customer />
+        )}
       </div>
-    )
+    );
   }
 }
 
-
-
-
-
-export default SelectUser
+export default SelectUser;

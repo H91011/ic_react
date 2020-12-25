@@ -1,16 +1,10 @@
-import './App.css';
-import SelectUser from './components/selectUser'
+import "./App.css";
+import SelectUser from "./components/selectUser";
 
 function App() {
-  return ( <
-    div className = "App" >
-
-    <p> Hello World </p>
-
-    <SelectUser />
-
-
-
+  return (
+    <div className="App">
+      <SelectUser />
     </div>
   );
 }
