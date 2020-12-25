@@ -75,7 +75,6 @@ class Customer extends Component {
       this.setState({selectedTab: "tickets", currentTicket});
     } else if (!currentTicket && subject && bodyMsg) {
       const currentTicket = this.createTicket(subject, bodyMsg);
-      console.log(currentTicket);
       tickets.push(currentTicket);
       this.setState({
         selectedTab: "tickets",
