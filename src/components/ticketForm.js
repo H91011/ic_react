@@ -13,64 +13,58 @@ import {
 import {MdWarning, MdDone, MdSend} from "react-icons/md";
 import {nanoid} from "nanoid";
 
+const url = "http://localhost:3000/ticket";
+const options = {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  mode: "cors",
+  body: null
+};
+
 class TicketForm extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      loading: true,
       user: 0,
       selectedTab: "tickets",
-      tickets: [
-        {
-          subject: "ticket 1",
-          status: 1,
-          body: [
-            {user: "customer", msg: "Bir hata var"},
-            {user: "employee", msg: "Hata Çözüldü"},
-            {user: "customer", msg: "Hayır çalışmıyor"},
-            {user: "customer", msg: "Hala çalışmıyor"}
-          ]
-        },
-        {subject: "ticket 2", status: 0, body: []},
-        {subject: "ticket 3", status: 1, body: []},
-        {subject: "ticket 4", status: 0, body: []},
-        {subject: "ticket 5", status: 1, body: []}
-      ],
-
-      currentTicket: null,
+      tickets: [],
+      cTicket: null,
       ticketText: undefined
     };
   }
 
-  createTicketMsg = msg => {
-    return {user: "customer", msg};
-  };
-
   createTicket = (subject, msg) => {
     return {
-      subject,
+      subject: subject,
       status: 1,
       body: [{user: "customer", msg}]
     };
   };
 
   listTickets = tickets => {
-    return tickets.map((elem, index) => {
-      return (
-        <ListGroup.Item
-          key={nanoid()}
-          index={index}
-          onClick={item => {
-            const {nodeValue} = item.target.attributes.index;
-            this.setState({
-              currentTicket: tickets[nodeValue],
-              selectedTab: "createTicket"
-            });
-          }}
-        >
-          {elem.status ? <MdWarning /> : <MdDone />} {elem.subject}
-        </ListGroup.Item>
-      );
-    });
+    if (tickets.length) {
+      return tickets.map((elem, index) => {
+        return (
+          <ListGroup.Item
+            key={nanoid()}
+            index={index}
+            onClick={item => {
+              const {nodeValue} = item.target.attributes.index;
+              this.setState({
+                cTicket: tickets[nodeValue],
+                selectedTab: "createTicket"
+              });
+            }}
+          >
+            {elem.status ? <MdWarning /> : <MdDone />} {elem.subject}
+          </ListGroup.Item>
+        );
+      });
+    }
+    return <p>You dont have any tickets.</p>;
   };
 
   listTicketBody = body => {
@@ -78,7 +72,7 @@ class TicketForm extends Component {
     const tAlign =
       user === "customer" ? {textAlign: "left"} : {textAlign: "right"};
     return (
-      <ListGroup.Item>
+      <ListGroup.Item key={nanoid()}>
         <p style={tAlign}>
           <strong>{user}</strong>
         </p>
@@ -87,21 +81,29 @@ class TicketForm extends Component {
     );
   };
 
-  sendTicket = () => {
-    const {tickets, currentTicket} = this.state;
+  sendTicket = async () => {
+    var {cTicket} = this.state;
     const bodyMsg = document.getElementById("bodyMsg").value;
     const subject = document.getElementById("ticketSubject").value;
+    var optFetch = null;
+    if (cTicket && bodyMsg) {
+      const {name, body, _id} = cTicket;
+      body.push({userId: _id, user: name, msg: bodyMsg});
+      this.setState({selectedTab: "tickets", cTicket});
+      optFetch = {router: "/update", body: JSON.stringify({id: cTicket._id})};
+    } else if (!cTicket) {
+      cTicket = this.createTicket(subject, bodyMsg);
+      optFetch = {router: "/add", body: JSON.stringify(cTicket)};
+    }
 
-    if (currentTicket && bodyMsg) {
-      const ticketMsg = this.createTicketMsg(bodyMsg);
-      currentTicket.body.push(ticketMsg);
-      this.setState({selectedTab: "tickets", currentTicket});
-    } else if (!currentTicket && subject && bodyMsg) {
-      const currentTicket = this.createTicket(subject, bodyMsg);
-      tickets.push(currentTicket);
+    if (subject && bodyMsg) {
+      options.body = optFetch.body;
+      await fetch(url + optFetch.router, options);
+      const response = await fetch(url + "/list");
+      const tickets = await response.json();
       this.setState({
         selectedTab: "tickets",
-        currentTicket,
+        cTicket,
         tickets
       });
     } else {
@@ -112,7 +114,7 @@ class TicketForm extends Component {
   tabSelect = k => {
     const state = {
       selectedTab: k,
-      currentTicket: null
+      cTicket: null
     };
     if (k === "createTicket") {
       state.ticketText = undefined;
@@ -122,130 +124,148 @@ class TicketForm extends Component {
     this.setState(state);
   };
 
+  componentDidMount() {
+    if (this.state.loading) {
+      fetch("http://localhost:3000/ticket/list")
+        .then(response => response.json())
+        .then(tickets => {
+          this.setState({tickets, loading: false});
+        });
+    }
+  }
+
   render() {
-    const {selectedTab, tickets, currentTicket, ticketText} = this.state;
+    const {loading, selectedTab, tickets, cTicket, ticketText} = this.state;
     const {user} = this.props;
-    console.log(user);
     return (
       <div>
-        <Row>
-          <Col className="mx-auto" xs={5}>
-            <br />
-            <br />
-            <br />
-            <br />
-            <Tabs
-              defaultActiveKey="tickets"
-              id="customerTab"
-              activeKey={selectedTab}
-              onSelect={k => {
-                this.tabSelect(k);
-              }}
-            >
-              <Tab eventKey="tickets" title="My Tickets">
-                {user.type === 1 ? (
-                  <div>
-                    <Form style={{display: "inline-flex", marginTop: "10px"}}>
-                      <Form.Check
-                        className="searchRadio"
-                        type="radio"
-                        id="allRadio"
-                        label="all"
-                        name="showRadios"
-                      />
-                      <Form.Check
-                        className="searchRadio"
-                        type="radio"
-                        id="openRadio"
-                        label="opened"
-                        name="showRadios"
-                      />
-                      <Form.Check
-                        className="searchRadio"
-                        type="radio"
-                        id="closeRadio"
-                        label="closed"
-                        name="showRadios"
-                      />
-                    </Form>
-                    <Form style={{display: "flex", marginTop: "10px"}}>
-                      <InputGroup size="sm" className="mb-6">
-                        <InputGroup.Prepend></InputGroup.Prepend>
-                        <FormControl
-                          id="searchBar"
-                          disabled={false}
-                          aria-describedby="basic-addon1"
-                          placeholder="search ticket"
+        {loading ? (
+          <p>Loading tickets... </p>
+        ) : (
+          <Row>
+            <Col className="mx-auto" xs={5}>
+              <br />
+              <br />
+              <br />
+              <br />
+              <Tabs
+                key={nanoid()}
+                defaultActiveKey="tickets"
+                id="customerTab"
+                activeKey={selectedTab}
+                onSelect={k => {
+                  this.tabSelect(k);
+                }}
+              >
+                <Tab key={nanoid()} eventKey="tickets" title="My Tickets">
+                  {user.type === 1 ? (
+                    <div>
+                      <Form
+                        key={nanoid()}
+                        style={{display: "inline-flex", marginTop: "10px"}}
+                      >
+                        <Form.Check
+                          className="searchRadio"
+                          type="radio"
+                          id="allRadio"
+                          label="all"
+                          name="showRadios"
                         />
-                      </InputGroup>
-                      <Form.Check
-                        style={{
-                          fontSize: "10px",
-                          marginTop: "5px",
-                          marginLeft: "5px"
-                        }}
-                        type="switch"
-                        id="searchswitch"
-                        label="byName"
-                      />
-                    </Form>
-                  </div>
-                ) : null}
-                <ListGroup style={{marginTop: "15px"}}>
-                  {this.listTickets(tickets)}
-                </ListGroup>
-              </Tab>
-              <Tab eventKey="createTicket" title="Send Ticket">
-                <InputGroup
-                  size="sm"
-                  className="mb-3"
-                  style={{marginTop: "15px"}}
-                >
-                  <InputGroup.Prepend></InputGroup.Prepend>
-                  <FormControl
-                    id="ticketSubject"
-                    disabled={user.type === 1 ? true : false}
-                    aria-describedby="basic-addon1"
-                    placeholder="ticket subject"
-                    value={currentTicket ? currentTicket.subject : ticketText}
-                    onChange={input => {
-                      this.setState({ticketText: ticketText});
+                        <Form.Check
+                          className="searchRadio"
+                          type="radio"
+                          id="openRadio"
+                          label="opened"
+                          name="showRadios"
+                        />
+                        <Form.Check
+                          className="searchRadio"
+                          type="radio"
+                          id="closeRadio"
+                          label="closed"
+                          name="showRadios"
+                        />
+                      </Form>
+                      <Form
+                        key={nanoid()}
+                        style={{display: "flex", marginTop: "10px"}}
+                      >
+                        <InputGroup size="sm" className="mb-6">
+                          <InputGroup.Prepend></InputGroup.Prepend>
+                          <FormControl
+                            id="searchBar"
+                            disabled={false}
+                            aria-describedby="basic-addon1"
+                            placeholder="search ticket"
+                          />
+                        </InputGroup>
+                        <Form.Check
+                          style={{
+                            fontSize: "10px",
+                            marginTop: "5px",
+                            marginLeft: "5px"
+                          }}
+                          type="switch"
+                          id="searchswitch"
+                          label="byName"
+                        />
+                      </Form>
+                    </div>
+                  ) : null}
+                  <ListGroup style={{marginTop: "15px"}}>
+                    {this.listTickets(tickets)}
+                  </ListGroup>
+                </Tab>
+                <Tab key={nanoid()} eventKey="createTicket" title="Send Ticket">
+                  <InputGroup
+                    key={nanoid()}
+                    size="sm"
+                    className="mb-3"
+                    style={{marginTop: "15px"}}
+                  >
+                    <InputGroup.Prepend></InputGroup.Prepend>
+                    <FormControl
+                      key={nanoid()}
+                      id="ticketSubject"
+                      disabled={user.type === 1 ? true : false}
+                      aria-describedby="basic-addon1"
+                      placeholder="ticket subject"
+                      value={cTicket ? cTicket.subject : ticketText}
+                    />
+                  </InputGroup>
+                  <ListGroup key={nanoid()}>
+                    {cTicket ? cTicket.body.map(this.listTicketBody) : null}
+                  </ListGroup>
+                  <InputGroup key={nanoid()} style={{marginTop: "15px"}}>
+                    <InputGroup.Prepend></InputGroup.Prepend>
+                    <FormControl
+                      id="bodyMsg"
+                      as="textarea"
+                      aria-label="With textarea"
+                    />
+                  </InputGroup>
+                  <Form key={nanoid()} style={{marginTop: "10px"}}>
+                    <Form.Group>
+                      <Form.File id="fileInput" />
+                    </Form.Group>
+                  </Form>
+                  <Button
+                    key={nanoid()}
+                    id="sendTicket"
+                    className="ticketBtn"
+                    style={{float: "right", marginTop: "5px"}}
+                    size="sm"
+                    onClick={() => {
+                      this.sendTicket();
                     }}
-                  />
-                </InputGroup>
-                <ListGroup>
-                  {currentTicket
-                    ? currentTicket.body.map(this.listTicketBody)
-                    : null}
-                </ListGroup>
-                <InputGroup style={{marginTop: "15px"}}>
-                  <InputGroup.Prepend></InputGroup.Prepend>
-                  <FormControl
-                    id="bodyMsg"
-                    as="textarea"
-                    aria-label="With textarea"
-                  />
-                </InputGroup>
-                <Form style={{marginTop: "10px"}}>
-                  <Form.Group>
-                    <Form.File id="fileInput" />
-                  </Form.Group>
-                </Form>
-                <Button
-                  id="sendTicket"
-                  className="ticketBtn"
-                  style={{float: "right", marginTop: "5px"}}
-                  size="sm"
-                  onClick={() => {
-                    this.sendTicket();
-                  }}
-                >
-                  Send <MdSend />
-                </Button>
-              </Tab>
-            </Tabs>
-          </Col>
-        </Row>
+                  >
+                    Send <MdSend />
+                  </Button>
+                </Tab>
+              </Tabs>
+            </Col>
+          </Row>
+        )}
       </div>
     );
   }

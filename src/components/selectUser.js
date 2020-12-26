@@ -1,7 +1,9 @@
 import {Component} from "react";
 import {Card, Row, Col} from "react-bootstrap";
 import TicketForm from "./ticketForm.js";
+import {nanoid} from "nanoid";
 
+const url = "http://localhost:3000/user/list";
 class SelectUser extends Component {
   constructor(props) {
     super(props);
@@ -13,7 +15,7 @@ class SelectUser extends Component {
     };
   }
   componentDidMount() {
-    fetch("http://localhost:3000/user/list")
+    fetch(url)
       .then(response => response.json())
       .then(userList => {
         console.log(userList);
@@ -57,7 +59,7 @@ class SelectUser extends Component {
             </Col>
           </Row>
         ) : (
-          <TicketForm user={this.state.selectedUser} />
+          <TicketForm key={nanoid()} user={this.state.selectedUser} />
         )}
       </div>
     );
