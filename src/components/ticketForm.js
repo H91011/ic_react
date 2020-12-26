@@ -14,14 +14,6 @@ import {MdWarning, MdDone, MdSend} from "react-icons/md";
 import {nanoid} from "nanoid";
 
 const url = "http://localhost:3000/ticket";
-const options = {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  mode: "cors",
-  body: null
-};
 
 class TicketForm extends Component {
   constructor(props) {
@@ -103,27 +95,39 @@ class TicketForm extends Component {
     var optFetch = null;
 
     if (cTicket && bodyMsg) {
-      const {name, body, _id} = cTicket;
-      body.push({userId: _id, user: name, msg: bodyMsg});
+      const {_id} = cTicket;
+
       this.setState({selectedTab: "tickets", cTicket});
-      optFetch = {router: "/update", body: JSON.stringify({id: cTicket._id})};
+      optFetch = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        router: "/update",
+        mode: "cors",
+        body: JSON.stringify({
+          id: cTicket._id,
+          data: {userId: _id, user: name, msg: bodyMsg}
+        })
+      };
     } else if (!cTicket) {
       cTicket = this.createTicket(name, subject, bodyMsg);
-      optFetch = {router: "/add", body: JSON.stringify(cTicket)};
+      optFetch = {method: "GET", mode: "cors", router: "/add"};
     }
 
     if (subject && bodyMsg) {
-      options.body = optFetch.body;
-      await fetch(url + optFetch.router, options);
+      var res = await fetch(url + optFetch.router, optFetch);
+      res = await res.json();
+      if (res.status) {
+        const response = await fetch(url + "/list");
+        const tickets = await response.json();
 
-      const response = await fetch(url + "/list");
-      const tickets = await response.json();
-
-      this.setState({
-        selectedTab: "tickets",
-        cTicket,
-        tickets
-      });
+        this.setState({
+          selectedTab: "tickets",
+          cTicket,
+          tickets
+        });
+      }
     } else {
       alert("Please fill the inputs.");
     }
