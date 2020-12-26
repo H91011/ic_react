@@ -88,8 +88,8 @@ class TicketForm extends Component {
 
   sendTicket = async () => {
     var {cTicket} = this.state;
-    const {name} = this.props.user;
-
+    const {name, type} = this.props.user;
+    console.log(type);
     const bodyMsg = document.getElementById("bodyMsg").value;
     const subject = document.getElementById("ticketSubject").value;
     var optFetch = null;
@@ -107,6 +107,8 @@ class TicketForm extends Component {
         mode: "cors",
         body: JSON.stringify({
           id: cTicket._id,
+          status:
+            type === 1 ? 0 /*buraya closed bilgisi gelecek*/ : cTicket.status,
           data: {userId: _id, user: name, msg: bodyMsg}
         })
       };
