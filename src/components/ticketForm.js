@@ -10,13 +10,12 @@ import {
   Button,
   Form
 } from "react-bootstrap";
-import {MdWarning, MdDone} from "react-icons/md";
+import {MdWarning, MdDone, MdSend} from "react-icons/md";
 import {nanoid} from "nanoid";
 
 class TicketForm extends Component {
   constructor(props) {
     super(props);
-    console.log(this);
     this.state = {
       user: 0,
       selectedTab: "tickets",
@@ -52,6 +51,26 @@ class TicketForm extends Component {
       status: 1,
       body: [{user: "customer", msg}]
     };
+  };
+
+  listTickets = tickets => {
+    return tickets.map((elem, index) => {
+      return (
+        <ListGroup.Item
+          key={nanoid()}
+          index={index}
+          onClick={item => {
+            const {nodeValue} = item.target.attributes.index;
+            this.setState({
+              currentTicket: tickets[nodeValue],
+              selectedTab: "createTicket"
+            });
+          }}
+        >
+          {elem.status ? <MdWarning /> : <MdDone />} {elem.subject}
+        </ListGroup.Item>
+      );
+    });
   };
 
   listTicketBody = body => {
@@ -105,7 +124,8 @@ class TicketForm extends Component {
 
   render() {
     const {selectedTab, tickets, currentTicket, ticketText} = this.state;
-    const {type} = this.props.user;
+    const {user} = this.props;
+    console.log(user);
     return (
       <div>
         <Row>
@@ -123,7 +143,7 @@ class TicketForm extends Component {
               }}
             >
               <Tab eventKey="tickets" title="My Tickets">
-                {type === 1 ? (
+                {user.type === 1 ? (
                   <div>
                     <Form style={{display: "inline-flex", marginTop: "10px"}}>
                       <Form.Check
@@ -172,24 +192,7 @@ class TicketForm extends Component {
                   </div>
                 ) : null}
                 <ListGroup style={{marginTop: "15px"}}>
-                  {tickets.map((elem, index) => {
-                    return (
-                      <ListGroup.Item
-                        key={nanoid()}
-                        index={index}
-                        onClick={item => {
-                          const {nodeValue} = item.target.attributes.index;
-                          this.setState({
-                            currentTicket: tickets[nodeValue],
-                            selectedTab: "createTicket"
-                          });
-                        }}
-                      >
-                        {elem.status ? <MdWarning /> : <MdDone />}{" "}
-                        {elem.subject}
-                      </ListGroup.Item>
-                    );
-                  })}
+                  {this.listTickets(tickets)}
                 </ListGroup>
               </Tab>
               <Tab eventKey="createTicket" title="Send Ticket">
@@ -201,7 +204,7 @@ class TicketForm extends Component {
                   <InputGroup.Prepend></InputGroup.Prepend>
                   <FormControl
                     id="ticketSubject"
-                    disabled={false}
+                    disabled={user.type === 1 ? true : false}
                     aria-describedby="basic-addon1"
                     placeholder="ticket subject"
                     value={currentTicket ? currentTicket.subject : ticketText}
@@ -237,7 +240,7 @@ class TicketForm extends Component {
                     this.sendTicket();
                   }}
                 >
-                  Send
+                  Send <MdSend />
                 </Button>
               </Tab>
             </Tabs>
