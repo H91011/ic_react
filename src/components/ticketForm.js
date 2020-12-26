@@ -36,11 +36,24 @@ class TicketForm extends Component {
     };
   }
 
-  createTicket = (subject, msg) => {
+  tabSelect = k => {
+    const state = {
+      selectedTab: k,
+      cTicket: null
+    };
+    if (k === "createTicket") {
+      state.ticketText = undefined;
+      document.getElementById("ticketSubject").value = null;
+      document.getElementById("bodyMsg").value = null;
+    }
+    this.setState(state);
+  };
+
+  createTicket = (name, subject, msg) => {
     return {
       subject: subject,
       status: 1,
-      body: [{user: "customer", msg}]
+      body: [{user: name, msg}]
     };
   };
 
@@ -83,24 +96,29 @@ class TicketForm extends Component {
 
   sendTicket = async () => {
     var {cTicket} = this.state;
+    const {name} = this.props.user;
+
     const bodyMsg = document.getElementById("bodyMsg").value;
     const subject = document.getElementById("ticketSubject").value;
     var optFetch = null;
+
     if (cTicket && bodyMsg) {
       const {name, body, _id} = cTicket;
       body.push({userId: _id, user: name, msg: bodyMsg});
       this.setState({selectedTab: "tickets", cTicket});
       optFetch = {router: "/update", body: JSON.stringify({id: cTicket._id})};
     } else if (!cTicket) {
-      cTicket = this.createTicket(subject, bodyMsg);
+      cTicket = this.createTicket(name, subject, bodyMsg);
       optFetch = {router: "/add", body: JSON.stringify(cTicket)};
     }
 
     if (subject && bodyMsg) {
       options.body = optFetch.body;
       await fetch(url + optFetch.router, options);
+
       const response = await fetch(url + "/list");
       const tickets = await response.json();
+
       this.setState({
         selectedTab: "tickets",
         cTicket,
@@ -111,22 +129,9 @@ class TicketForm extends Component {
     }
   };
 
-  tabSelect = k => {
-    const state = {
-      selectedTab: k,
-      cTicket: null
-    };
-    if (k === "createTicket") {
-      state.ticketText = undefined;
-      document.getElementById("ticketSubject").value = null;
-      document.getElementById("bodyMsg").value = null;
-    }
-    this.setState(state);
-  };
-
   componentDidMount() {
     if (this.state.loading) {
-      fetch("http://localhost:3000/ticket/list")
+      fetch(url + "/list")
         .then(response => response.json())
         .then(tickets => {
           this.setState({tickets, loading: false});
