@@ -1,4 +1,4 @@
-# İpsiz Cambaz front-end 
+# İpsizCambaz front-end 
 
 In the project directory, you can run:
 
