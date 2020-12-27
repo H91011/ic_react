@@ -8,7 +8,7 @@ In the project directory, you can run:
 
 - There are 3 users, one of them `employee` others are customers, names: `customer1, customer2`
 - Customer can:
--- add ticket
--- add message to ticket
--- send file
+⋅⋅* add ticket
+⋅⋅* add message to ticket
+⋅⋅* send file
 
