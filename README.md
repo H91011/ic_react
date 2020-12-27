@@ -6,5 +6,9 @@ In the project directory, you can run:
 
 ### Descriptions:
 
-- there are 3 users, one of them `emplotyee` others are customer names: `customer1, customer2`
+- There are 3 users, one of them `employee` others are customers, names: `customer1, customer2`
+- Customer can:
+-- add ticket
+-- add message to ticket
+-- send file
 
