@@ -37,25 +37,20 @@ class SelectUser extends Component {
               <br />
               <br />
               <p> Please Select a Account</p>
-              <Card
-                onClick={() => {
-                  this.setState({selectedUser: userList[0]});
-                }}
-              >
-                <Card.Body>
-                  <Card.Title>{userList[0].name}</Card.Title>
-                </Card.Body>
-              </Card>
-
-              <Card
-                onClick={() => {
-                  this.setState({selectedUser: userList[1]});
-                }}
-              >
-                <Card.Body>
-                  <Card.Title>{userList[1].name}</Card.Title>
-                </Card.Body>
-              </Card>
+              {userList.map(user => {
+                return (
+                  <Card
+                    key={nanoid()}
+                    onClick={() => {
+                      this.setState({selectedUser: user});
+                    }}
+                  >
+                    <Card.Body>
+                      <Card.Title>{user.name}</Card.Title>
+                    </Card.Body>
+                  </Card>
+                );
+              })}
             </Col>
           </Row>
         ) : (

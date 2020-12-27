@@ -41,8 +41,9 @@ class TicketForm extends Component {
     this.setState(state);
   };
 
-  createTicket = (name, subject, msg) => {
+  createTicket = (id, name, subject, msg) => {
     return {
+      userId: id,
       subject: subject,
       status: 1,
       body: [{user: name, msg}]
@@ -88,7 +89,7 @@ class TicketForm extends Component {
 
   sendTicket = async () => {
     var {cTicket} = this.state;
-    const {name, type} = this.props.user;
+    const {name, type, _id} = this.props.user;
     console.log(type);
     const bodyMsg = document.getElementById("bodyMsg").value;
     const subject = document.getElementById("ticketSubject").value;
@@ -113,15 +114,29 @@ class TicketForm extends Component {
         })
       };
     } else if (!cTicket) {
-      cTicket = this.createTicket(name, subject, bodyMsg);
-      optFetch = {method: "GET", mode: "cors", router: "/add"};
+      cTicket = this.createTicket(_id, name, subject, bodyMsg);
+      optFetch = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        router: "/add",
+        mode: "cors",
+        body: JSON.stringify(cTicket)
+      };
     }
 
     if (subject && bodyMsg) {
       var res = await fetch(url + optFetch.router, optFetch);
       res = await res.json();
       if (res.status) {
-        const response = await fetch(url + "/list");
+        var urlParam;
+        if (type === 1) {
+          urlParam = "/list";
+        } else {
+          urlParam = "/list/?userId=" + _id;
+        }
+        const response = await fetch(url + urlParam);
         const tickets = await response.json();
 
         this.setState({
@@ -137,7 +152,14 @@ class TicketForm extends Component {
 
   componentDidMount() {
     if (this.state.loading) {
-      fetch(url + "/list")
+      const {user} = this.props;
+      var urlParam;
+      if (user.type === 1) {
+        urlParam = "/list";
+      } else {
+        urlParam = "/list/?userId=" + user._id;
+      }
+      fetch(url + urlParam)
         .then(response => response.json())
         .then(tickets => {
           this.setState({tickets, loading: false});
@@ -238,7 +260,7 @@ class TicketForm extends Component {
                     <FormControl
                       key={nanoid()}
                       id="ticketSubject"
-                      disabled={user.type === 1 ? true : false}
+                      disabled={cTicket ? true : false}
                       aria-describedby="basic-addon1"
                       placeholder="ticket subject"
                       value={cTicket ? cTicket.subject : ticketText}
