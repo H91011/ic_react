@@ -9,6 +9,14 @@ In the project directory, you can run:
 - There are 3 users, one of them `employee` others are customers, names: `customer1, customer2`
 - Customer can:
 * * add ticket
-** add message to ticket
-* send file
+* * add message to ticket
+* * send file
+- Employee can:
+* * list tickets
+* * filter tickets
+* * open close tickets
+* * add message to ticket
+* * send file
+* * search ticket by subject
+* * searc ticket by user name
 
