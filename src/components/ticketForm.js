@@ -10,10 +10,10 @@ import {
   Button,
   Form
 } from "react-bootstrap";
-import {MdWarning, MdDone, MdSend} from "react-icons/md";
+import {MdWarning, MdDone, MdSend, MdHome} from "react-icons/md";
 import {nanoid} from "nanoid";
 
-const url = "http://localhost:3000/ticket";
+const url = "http://localhost:3005/ticket";
 
 class TicketForm extends Component {
   constructor(props) {
@@ -24,7 +24,10 @@ class TicketForm extends Component {
       selectedTab: "tickets",
       tickets: [],
       cTicket: null,
-      ticketText: undefined
+      ticketText: undefined,
+      ticketStatus: false,
+      selectedRadio: "allRadio",
+      searchByName: false
     };
   }
 
@@ -41,12 +44,12 @@ class TicketForm extends Component {
     this.setState(state);
   };
 
-  createTicket = (id, name, subject, msg) => {
+  createTicket = (id, type, name, subject, msg, file) => {
     return {
       userId: id,
       subject: subject,
-      status: 1,
-      body: [{user: name, msg}]
+      status: "open",
+      body: [{type, user: name, msg, fileName: file ? file.name : null}]
     };
   };
 
@@ -61,11 +64,13 @@ class TicketForm extends Component {
               const {nodeValue} = item.target.attributes.index;
               this.setState({
                 cTicket: tickets[nodeValue],
-                selectedTab: "createTicket"
+                selectedTab: "createTicket",
+                ticketStatus: tickets[nodeValue].status
               });
             }}
           >
-            {elem.status ? <MdWarning /> : <MdDone />} {elem.subject}
+            {elem.status === "close" ? <MdWarning /> : <MdDone />}
+            {" " + elem.subject}
           </ListGroup.Item>
         );
       });
@@ -74,30 +79,37 @@ class TicketForm extends Component {
   };
 
   listTicketBody = body => {
-    const {user, msg} = body;
-    const tAlign =
-      user === "customer" ? {textAlign: "left"} : {textAlign: "right"};
+    const {user, msg, type, fileName} = body;
+    console.log("type", type);
+    const tAlign = type === 2 ? {textAlign: "left"} : {textAlign: "right"};
     return (
       <ListGroup.Item key={nanoid()}>
-        <p style={tAlign}>
+        <p className="userFont" style={tAlign}>
           <strong>{user}</strong>
         </p>
-        <p style={tAlign}>{msg}</p>
+        <p className="fileFont" style={tAlign}>
+          <a href={fileName ? url + "/show/" + fileName : "#"}> file</a>
+        </p>
+        <p className="bodyFont" style={tAlign}>
+          {msg}
+        </p>
       </ListGroup.Item>
     );
   };
 
   sendTicket = async () => {
-    var {cTicket} = this.state;
+    var {cTicket, ticketStatus} = this.state;
     const {name, type, _id} = this.props.user;
-    console.log(type);
+
     const bodyMsg = document.getElementById("bodyMsg").value;
     const subject = document.getElementById("ticketSubject").value;
     var optFetch = null;
 
-    if (cTicket && bodyMsg) {
-      const {_id} = cTicket;
+    const file = document.getElementById("fileInput").files[0];
 
+    if (cTicket && type === 1) {
+      const {_id} = cTicket;
+      console.log(ticketStatus);
       this.setState({selectedTab: "tickets", cTicket});
       optFetch = {
         method: "POST",
@@ -108,13 +120,12 @@ class TicketForm extends Component {
         mode: "cors",
         body: JSON.stringify({
           id: cTicket._id,
-          status:
-            type === 1 ? 0 /*buraya closed bilgisi gelecek*/ : cTicket.status,
-          data: {userId: _id, user: name, msg: bodyMsg}
+          status: ticketStatus,
+          data: {userId: _id, type, user: name, msg: bodyMsg}
         })
       };
     } else if (!cTicket) {
-      cTicket = this.createTicket(_id, name, subject, bodyMsg);
+      cTicket = this.createTicket(_id, type, name, subject, bodyMsg, file);
       optFetch = {
         method: "POST",
         headers: {
@@ -126,7 +137,16 @@ class TicketForm extends Component {
       };
     }
 
-    if (subject && bodyMsg) {
+    if (file) {
+      const formData = new FormData();
+      formData.append("ticketFile", file);
+      await fetch(url + "/upload/", {
+        method: "POST",
+        body: formData
+      });
+    }
+
+    if ((subject && bodyMsg) || type === 1) {
       var res = await fetch(url + optFetch.router, optFetch);
       res = await res.json();
       if (res.status) {
@@ -150,6 +170,33 @@ class TicketForm extends Component {
     }
   };
 
+  filterTickets = async (id, searchText = null, byName = null) => {
+    console.log(id);
+    console.log(id.split("Radio"));
+    const filter = id.split("Radio")[0];
+    const response = await fetch(
+      url +
+        "/list/?filter=" +
+        filter +
+        "&search=" +
+        searchText +
+        "&byName=" +
+        byName
+    );
+    const tickets = await response.json();
+
+    this.setState({
+      selectedTab: "tickets",
+      tickets
+    });
+  };
+
+  searchTicket = text => {
+    const {selectedRadio, searchByName} = this.state;
+    this.filterTickets(selectedRadio, text, searchByName);
+    console.log(text);
+  };
+
   componentDidMount() {
     if (this.state.loading) {
       const {user} = this.props;
@@ -168,7 +215,16 @@ class TicketForm extends Component {
   }
 
   render() {
-    const {loading, selectedTab, tickets, cTicket, ticketText} = this.state;
+    const {
+      loading,
+      selectedTab,
+      tickets,
+      cTicket,
+      ticketText,
+      ticketStatus,
+      selectedRadio,
+      searchByName
+    } = this.state;
     const {user} = this.props;
     return (
       <div>
@@ -181,6 +237,24 @@ class TicketForm extends Component {
               <br />
               <br />
               <br />
+              <Row>
+                <Button
+                  key={nanoid()}
+                  id="homebutton"
+                  className="ticketBtn"
+                  style={{
+                    float: "left",
+                    marginLeft: "15px",
+                    marginBottom: "5px"
+                  }}
+                  onClick={() => {
+                    this.props.gotoMain();
+                  }}
+                >
+                  {" "}
+                  <MdHome />
+                </Button>
+              </Row>
               <Tabs
                 key={nanoid()}
                 defaultActiveKey="tickets"
@@ -190,7 +264,11 @@ class TicketForm extends Component {
                   this.tabSelect(k);
                 }}
               >
-                <Tab key={nanoid()} eventKey="tickets" title="My Tickets">
+                <Tab
+                  key={nanoid()}
+                  eventKey="tickets"
+                  title={user.type === 1 ? "Tickets" : "My Tickets"}
+                >
                   {user.type === 1 ? (
                     <div>
                       <Form
@@ -203,6 +281,13 @@ class TicketForm extends Component {
                           id="allRadio"
                           label="all"
                           name="showRadios"
+                          checked={selectedRadio === "allRadio" ? true : false}
+                          onChange={item => {
+                            this.setState({selectedRadio: "allRadio"});
+                          }}
+                          onClick={item => {
+                            this.filterTickets(item.target.id);
+                          }}
                         />
                         <Form.Check
                           className="searchRadio"
@@ -210,6 +295,13 @@ class TicketForm extends Component {
                           id="openRadio"
                           label="opened"
                           name="showRadios"
+                          checked={selectedRadio === "openRadio" ? true : false}
+                          onChange={item => {
+                            this.setState({selectedRadio: "openRadio"});
+                          }}
+                          onClick={item => {
+                            this.filterTickets(item.target.id);
+                          }}
                         />
                         <Form.Check
                           className="searchRadio"
@@ -217,6 +309,15 @@ class TicketForm extends Component {
                           id="closeRadio"
                           label="closed"
                           name="showRadios"
+                          checked={
+                            selectedRadio === "closeRadio" ? true : false
+                          }
+                          onChange={item => {
+                            this.setState({selectedRadio: "closeRadio"});
+                          }}
+                          onClick={item => {
+                            this.filterTickets(item.target.id);
+                          }}
                         />
                       </Form>
                       <Form
@@ -229,7 +330,13 @@ class TicketForm extends Component {
                             id="searchBar"
                             disabled={false}
                             aria-describedby="basic-addon1"
-                            placeholder="search ticket"
+                            placeholder="search ticket,  please hit enter"
+                            onKeyPress={event => {
+                              if (event.charCode === 13) {
+                                this.searchTicket(event.target.value);
+                                event.preventDefault();
+                              }
+                            }}
                           />
                         </InputGroup>
                         <Form.Check
@@ -241,6 +348,11 @@ class TicketForm extends Component {
                           type="switch"
                           id="searchswitch"
                           label="byName"
+                          checked={searchByName}
+                          onChange={event => {
+                            console.log(event.target.checked);
+                            this.setState({searchByName: event.target.checked});
+                          }}
                         />
                       </Form>
                     </div>
@@ -249,7 +361,11 @@ class TicketForm extends Component {
                     {this.listTickets(tickets)}
                   </ListGroup>
                 </Tab>
-                <Tab key={nanoid()} eventKey="createTicket" title="Send Ticket">
+                <Tab
+                  key={nanoid()}
+                  eventKey="createTicket"
+                  title={user.type === 1 ? "Response Ticket" : "Send Ticket"}
+                >
                   <InputGroup
                     key={nanoid()}
                     size="sm"
@@ -277,16 +393,39 @@ class TicketForm extends Component {
                       aria-label="With textarea"
                     />
                   </InputGroup>
-                  <Form key={nanoid()} style={{marginTop: "10px"}}>
+                  <Form
+                    key={nanoid()}
+                    style={{marginTop: "10px", display: "flex"}}
+                  >
                     <Form.Group>
                       <Form.File id="fileInput" />
+                      {user.type === 1 ? (
+                        <Form.Check
+                          style={{
+                            fontSize: "10px",
+                            float: "left",
+                            marginTop: "10px"
+                          }}
+                          type="switch"
+                          id="statusSwitch"
+                          label={ticketStatus}
+                          checked={ticketStatus === "open" ? true : false}
+                          onChange={() => {
+                            this.setState({
+                              ticketStatus:
+                                ticketStatus === "open" ? "close" : "open"
+                            });
+                          }}
+                        />
+                      ) : null}
                     </Form.Group>
                   </Form>
                   <Button
                     key={nanoid()}
                     id="sendTicket"
                     className="ticketBtn"
-                    style={{float: "right", marginTop: "5px"}}
+                    style={{float: "left", marginTop: "5px"}}
+                    disabled={cTicket || user.type === 2 ? false : true}
                     size="sm"
                     onClick={() => {
                       this.sendTicket();

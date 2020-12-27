@@ -3,7 +3,7 @@ import {Card, Row, Col} from "react-bootstrap";
 import TicketForm from "./ticketForm.js";
 import {nanoid} from "nanoid";
 
-const url = "http://localhost:3000/user/list";
+const url = "http://localhost:3005/user/list";
 class SelectUser extends Component {
   constructor(props) {
     super(props);
@@ -54,7 +54,13 @@ class SelectUser extends Component {
             </Col>
           </Row>
         ) : (
-          <TicketForm key={nanoid()} user={this.state.selectedUser} />
+          <TicketForm
+            key={nanoid()}
+            user={this.state.selectedUser}
+            gotoMain={() => {
+              this.setState({selectedUser: 0});
+            }}
+          />
         )}
       </div>
     );

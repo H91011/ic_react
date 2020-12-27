@@ -27,3 +27,18 @@
 .searchRadio{
   margin-left:15px;
 }
+
+.userFont {
+font-size: 10px;
+font-style: italic;
+}
+
+.fileFont {
+font-size: 10px;
+font-style: italic;
+text-decoration: underline;
+}
+
+.bodyFont {
+font-size: 12px;
+}
