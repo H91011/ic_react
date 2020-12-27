@@ -18,5 +18,5 @@ In the project directory, you can run:
 * * add message to ticket
 * * send file
 * * search ticket by subject
-* * searc ticket by user name
+* * search ticket by user name
 
